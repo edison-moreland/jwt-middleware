@@ -13,25 +13,20 @@ import (
 	//"github.com/edison-moreland/gonduit/models"
 )
 
-const jwtUsernameClaim = "name" // Where is the username stored?
-const jwtSigningKey = "SupoerSecret"
-const jwtTimeToLive = time.Hour * 24
-const jwtHeader = "Authorization"
-const jwtPrefix = "Token "
-
 // Generate creates and signs a new JWT
-func Generate(user *models.User) (string, error) {
+func Generate(identity interface{}) (string, error) {
+	config := pkgConfig()
+
 	// Create token
 	token := jwt.New(jwt.SigningMethodHS256)
 
-	// Set claims
+	// Add identity and expiration to claims
 	claims := token.Claims.(jwt.MapClaims)
-	claims[jwtUsernameClaim] = user.Username
-	// claims["admin"] = false // No admins, yet
-	claims["exp"] = time.Now().Add(jwtTimeToLive).Unix()
+	claims[config.IdentityClaim] = identity
+	claims["exp"] = time.Now().Add(config.TimeToLive).Unix()
 
 	// Sign token
-	tokenSigned, err := token.SignedString([]byte(jwtSigningKey))
+	tokenSigned, err := token.SignedString([]byte(config.SigningKey))
 	if err != nil {
 		return "", fmt.Errorf("error signing token: %#v", err.Error())
 	}
@@ -39,10 +34,12 @@ func Generate(user *models.User) (string, error) {
 	return tokenSigned, nil
 }
 
-// Validate de-signs and parses a JWTString and returns the user associated
-func Validate(tokenString string) (models.User, error) {
+// Validate de-signs and parses a JWTString and returns the identity associated
+func Validate(tokenString string) (interface{}, error) {
+	config := pkgConfig()
+
 	if IsRevoked(tokenString) {
-		return models.User{}, errors.New("token has been revoked")
+		return nil, errors.New("token has been revoked")
 	}
 
 	// Decrypt and parse token
@@ -53,37 +50,31 @@ func Validate(tokenString string) (models.User, error) {
 		}
 
 		// Everything looks good, return signing key
-		return []byte(jwtSigningKey), nil
+		return []byte(config.SigningKey), nil
 	})
 	if err != nil {
-		return models.User{}, fmt.Errorf("could not validate token (%v). Reason: %v", tokenString, err.Error())
+		return nil, fmt.Errorf("could not validate token (%v). Reason: %v", tokenString, err.Error())
 	}
 
-	// Extract claims, find user
+	// Extract claims
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		// Grab user name from JWT claims and get user object
-		user, err := models.GetUser(claims[jwtUsernameClaim].(string))
-		if err != nil {
-			return models.User{}, fmt.Errorf("could not find user %v", claims["user"].(string))
-		}
+		// Grab identity from JWT claims and get user object
+		return claims[config.IdentityClaim], nil
 
-		// Add token to user
-		user.Token = tokenString
-
-		// JWT valid and user found
-		return user, nil
 	}
-	return models.User{}, fmt.Errorf("could not validate token (%v)", tokenString)
+	return nil, fmt.Errorf("could not validate token (%v)", tokenString)
 }
 
 // ValidateFromRequest gets token from request headers and validates it
-func ValidateFromRequest(r *http.Request) (models.User, error) {
-	rawToken := r.Header.Get(jwtHeader)
-	if !strings.HasPrefix(rawToken, jwtPrefix) {
-		return models.User{}, errors.New("token not in headers")
+func ValidateFromRequest(r *http.Request) (interface{}, error) {
+	config := pkgConfig()
+
+	rawToken := r.Header.Get(config.Header)
+	if !strings.HasPrefix(rawToken, config.HeaderPrefix) {
+		return nil, errors.New("token not in headers")
 	}
 
-	token := strings.TrimPrefix(rawToken, jwtPrefix)
+	token := strings.TrimPrefix(rawToken, config.HeaderPrefix)
 
 	return Validate(token)
 }

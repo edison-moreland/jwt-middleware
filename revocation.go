@@ -8,9 +8,6 @@ import (
 // In the future it can redis, or some other store as using a global hash table is awful
 // Dont judge me on this code pls
 
-// TODO: Add to viper config
-const revokedTimeToLive = time.Hour * 10
-
 var _revocationStore map[string]time.Time
 var _isRevocationStoreInitialized = false
 
@@ -26,7 +23,7 @@ func getRevocationStore() map[string]time.Time {
 // Revoke adds a token to the list of revoked tokens
 func Revoke(token string) {
 	rs := getRevocationStore()
-	rs[token] = time.Now().Add(revokedTimeToLive)
+	rs[token] = time.Now().Add(pkgConfig().TimeToLive)
 }
 
 // IsRevoked checks if a token has been revoked
