@@ -9,8 +9,7 @@ import (
 	"strings"
 	"time"
 
-	jwt "github.com/dgrijalva/jwt-go"
-	//"github.com/edison-moreland/gonduit/models"
+	"github.com/dgrijalva/jwt-go"
 )
 
 // Generate creates and signs a new JWT
@@ -58,9 +57,9 @@ func Validate(tokenString string) (interface{}, error) {
 
 	// Extract claims
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		// Grab identity from JWT claims and get user object
+		// Grab identity from JWT claims
 		return claims[config.IdentityClaim], nil
-
+		// TODO add option for function that gets identity model from database?
 	}
 	return nil, fmt.Errorf("could not validate token (%v)", tokenString)
 }

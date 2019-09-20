@@ -2,6 +2,7 @@ package jwt
 
 import (
 	"context"
+	"errors"
 	"log"
 	"net/http"
 )
@@ -36,11 +37,11 @@ func Optional(next func(w http.ResponseWriter, r *http.Request)) http.Handler {
 		// Try to validate token
 		identity, err := ValidateFromRequest(r)
 		if err != nil {
-			// TODO: could instead add two keys to context, identity and identityexists
-			// No user logged in, add empty user to context
-			ctx := context.WithValue(r.Context(), identityKey, nil)
+			// No token found, continue on
+			// TODO: I don't know if this breaks things yet
+			//ctx := context.WithValue(r.Context(), identityKey, nil)
 
-			next(w, r.WithContext(ctx))
+			next(w, r)
 
 			return
 		}
@@ -52,14 +53,12 @@ func Optional(next func(w http.ResponseWriter, r *http.Request)) http.Handler {
 	})
 }
 
-// CurrentUser returns the logged in user from the request context
-func CurrentUser(r *http.Request) interface{} {
-	return r.Context().Value(identityKey)
-}
+// CurrentIdentity returns the identity previously added to the request context
+func CurrentIdentity(r *http.Request) (interface{}, error) {
+	identity := r.Context().Value(identityKey)
+	if identity == nil {
+		return nil, errors.New("could not find identity in request context")
+	}
 
-// UserLoggedIn returns true if a valid user model exists in the request context
-func UserLoggedIn(r *http.Request) bool {
-	// This could be changed to use another context value
-	//return CurrentUser(r).Username != ""
-	return false
+	return identity, nil
 }
