@@ -32,7 +32,7 @@ func ClearRevocationStore() {
 // Revoke adds a token to the list of revoked tokens
 func Revoke(token string) {
 	rs := getRevocationStore()
-	rs[token] = time.Now().Add(pkgConfig().TimeToLive)
+	rs[token] = time.Now().Add(pkgConfig().RevokedTimeToLive)
 }
 
 // IsRevoked checks if a token has been revoked
