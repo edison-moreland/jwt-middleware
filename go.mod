@@ -1,4 +1,4 @@
-module git@github.com:edison-moreland/tokenware.git
+module github.com/edison-moreland/tokenware
 
 go 1.13
 
