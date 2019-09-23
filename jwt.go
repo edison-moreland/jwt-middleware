@@ -1,4 +1,4 @@
-package jwt
+package tokenware
 
 // echo.labstack.com/cookbook/jwt
 
