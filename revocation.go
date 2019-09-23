@@ -11,13 +11,22 @@ import (
 var _revocationStore map[string]time.Time
 var _isRevocationStoreInitialized = false
 
+func createRevocationStore() {
+	_revocationStore = make(map[string]time.Time)
+	_isRevocationStoreInitialized = true
+}
+
 func getRevocationStore() map[string]time.Time {
 	if !_isRevocationStoreInitialized {
-		_revocationStore = make(map[string]time.Time)
-		_isRevocationStoreInitialized = true
+		createRevocationStore()
 	}
 
 	return _revocationStore
+}
+
+// ClearRevocationStore removes all keys from the revoked list
+func ClearRevocationStore() {
+	createRevocationStore() // Remake map
 }
 
 // Revoke adds a token to the list of revoked tokens
