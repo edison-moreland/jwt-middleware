@@ -2,7 +2,6 @@ package tokenware
 
 import (
 	"context"
-	"errors"
 	"log"
 	"net/http"
 )
@@ -54,11 +53,6 @@ func Optional(next func(w http.ResponseWriter, r *http.Request)) http.Handler {
 }
 
 // CurrentIdentity returns the identity previously added to the request context
-func CurrentIdentity(r *http.Request) (interface{}, error) {
-	identity := r.Context().Value(identityKey)
-	if identity == nil {
-		return nil, errors.New("could not find identity in request context")
-	}
-
-	return identity, nil
+func CurrentIdentity(r *http.Request) interface{} {
+	return r.Context().Value(identityKey)
 }
