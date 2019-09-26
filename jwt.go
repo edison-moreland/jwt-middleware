@@ -64,16 +64,26 @@ func Validate(tokenString string) (interface{}, error) {
 	return nil, fmt.Errorf("could not validate token (%v)", tokenString)
 }
 
-// ValidateFromRequest gets token from request headers and validates it
-func ValidateFromRequest(r *http.Request) (interface{}, error) {
+// GetRawToken grabs the token from request headers
+func GetRawToken(r *http.Request) (string, error) {
 	config := pkgConfig()
 
 	rawToken := r.Header.Get(config.Header)
 	if !strings.HasPrefix(rawToken, config.HeaderPrefix) {
-		return nil, errors.New("token not in headers")
+		return "", errors.New("token not in headers")
 	}
 
 	token := strings.TrimPrefix(rawToken, config.HeaderPrefix)
 
-	return Validate(token)
+	return token, nil
+}
+
+// ValidateFromRequest gets token from request headers and validates it
+func ValidateFromRequest(r *http.Request) (interface{}, error) {
+	rawToken, err := GetRawToken(r)
+	if err != nil {
+		return nil, err
+	}
+
+	return Validate(rawToken)
 }
